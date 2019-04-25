@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
+import 'package:http/http.dart' as http;
 
 void main() => runApp(MyApp());
 
@@ -25,9 +28,35 @@ class RandomWords extends StatefulWidget {
 }
 
 class randomWordsState extends State<RandomWords> {
-  final _list = <WordPair>[];
-  final _selectPair = Set<WordPair>();
+  final _list = <dynamic>[];
+  final _selectPair = Set<dynamic>();
   final _font = const TextStyle(fontSize: 18.0);
+
+  List list; 
+
+  final url = "";
+  final body = {}; 
+
+  Future getData() async {
+    const jsonCode = const JsonCodec();
+    final bodyJson = jsonCode.encode(body);
+
+    http.Response response = await http.post( Uri.encodeFull(url), headers: { "Content-Type": "application/json" }, body: bodyJson );
+
+    var listado = jsonCode.decode( response.body );
+
+    setState(() {
+     list = listado; 
+    });
+    debugPrint( list.toString() );
+ 
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getData();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +72,28 @@ class randomWordsState extends State<RandomWords> {
           )
         ],
       ),
-      body: _buildList(),
+      body: ListView.builder(
+        itemCount: list == null ? 0 : list.length,
+        itemBuilder: ( BuildContext context, int index ) {
+          return Card(
+            child: Row(
+              children: <Widget>[
+                CircleAvatar(
+                  backgroundColor: Colors.blue,
+                ),
+                Column(
+                  children: <Widget>[
+                    Text("Vendedor - ${list[index]["NombreVendedor"]}"),
+                    Text("Razon social - ${list[index]["RazonSocial"]}"),
+                    Text("Numero de documento - ${list[index]["NumDocumento"]}"),
+                  ],
+                )
+              ],
+            ),
+          );
+        },
+      ),
+      
     );
   }
 
@@ -54,7 +104,7 @@ class randomWordsState extends State<RandomWords> {
           final titles = _selectPair.map( (pair) {
             return ListTile(
               title: Text( 
-                pair.asPascalCase,
+                "Nombre",
                 style: _font,
               ),
 
@@ -85,22 +135,22 @@ class randomWordsState extends State<RandomWords> {
         if ( i.isOdd ) { // si el indice no es par !!
           return Divider();
         }
-        if (i >= _list.length) {
-          _list.addAll(generateWordPairs().take(10));
-        }
+        // if (i >= list.length) {
+        //   _list.addAll(generateWordPairs().take(10));
+        // }
 
         final index = i ~/ 2;
 
-        return _buildRow(_list[index]);
+        return _buildRow(list[index]);
       },
     );
   }
 
-  Widget _buildRow(WordPair pair) {
+  Widget _buildRow(dynamic pair) {
     final readyInSet = _selectPair.contains( pair );
     return ListTile(
       title: Text(
-        pair.asPascalCase,
+        pair["NombreVendedor"],
         style: _font,
       ),
       trailing: Icon(
